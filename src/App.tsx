@@ -37,12 +37,12 @@ function Content() {
     queryKey: ["user", userIdSearch],
     queryFn: async () => {
       const res = await fetch(`/api/user/${userIdSearch}`);
-      console.log(res);
       if (!res.ok) {
         throw new Error("User not found");
       }
       return res.json();
     },
+    retry: false,
   });
 
   const { mutate } = useMutation<User, unknown, Omit<User, "id">>({

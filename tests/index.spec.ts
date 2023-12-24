@@ -54,7 +54,7 @@ test("searched user info with error", async ({ page, worker }) => {
   await page.getByRole("button", { name: "Search" }).click();
 
   await expect(page.getByText("User not found")).toBeVisible({
-    timeout: 10000,
+    timeout: 3000,
   });
 });
 
