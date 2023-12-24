@@ -5,9 +5,9 @@ import { defaultUser } from "../mock/mockData";
 test("Show default user info", async ({ page }) => {
   await page.goto("/");
 
-  expect(page.getByText(defaultUser.id));
-  expect(page.getByText(defaultUser.name));
-  expect(page.getByText(defaultUser.email));
+  await expect(page.getByText(defaultUser.id)).toBeVisible();
+  await expect(page.getByText(defaultUser.name)).toBeVisible();
+  await expect(page.getByText(defaultUser.email)).toBeVisible();
 });
 
 test("searched user info", async ({ page, worker }) => {
@@ -32,7 +32,52 @@ test("searched user info", async ({ page, worker }) => {
   await page.getByLabel("User Id Search").fill(targetUser.id);
   await page.getByRole("button", { name: "Search" }).click();
 
-  expect(page.getByText(targetUser.id));
-  expect(page.getByText(targetUser.name));
-  expect(page.getByText(targetUser.email));
+  await expect(page.getByText(targetUser.id)).toBeVisible();
+  await expect(page.getByText(targetUser.name)).toBeVisible();
+  await expect(page.getByText(targetUser.email)).toBeVisible();
+});
+
+test("searched user info with error", async ({ page, worker }) => {
+  worker.use(
+    http.get("/api/user/:id", async () => {
+      return HttpResponse.json(
+        {},
+        {
+          status: 404,
+        }
+      );
+    })
+  );
+
+  await page.goto("/");
+  await page.getByLabel("User Id Search").fill("noUserId");
+  await page.getByRole("button", { name: "Search" }).click();
+
+  await expect(page.getByText("User not found")).toBeVisible({
+    timeout: 10000,
+  });
+});
+
+test("create new user", async ({ page, worker }) => {
+  let isVarRight = false;
+
+  worker.use(
+    http.post("/api/user", async ({ request }) => {
+      const info = (await request.json()) as { name: string; email: string };
+      expect(info.name).toEqual("New User");
+      expect(info.email).toEqual("new.user@email.com");
+      isVarRight = true;
+      return HttpResponse.json(
+        {},
+        {
+          status: 200,
+        }
+      );
+    })
+  );
+
+  await page.goto("/");
+
+  await page.getByRole("button", { name: "Create" }).click();
+  expect(isVarRight).toBeTruthy();
 });

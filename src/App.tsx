@@ -33,20 +33,31 @@ function Content() {
     setUserIdSearch(userIdInput);
   };
 
-  const { data } = useQuery<User>({
+  const { data, error } = useQuery<User>({
     queryKey: ["user", userIdSearch],
-    queryFn: () => fetch(`/api/user/${userIdSearch}`).then((res) => res.json()),
+    queryFn: async () => {
+      const res = await fetch(`/api/user/${userIdSearch}`);
+      console.log(res);
+      if (!res.ok) {
+        throw new Error("User not found");
+      }
+      return res.json();
+    },
   });
-  // const { mutate } = useMutation<User, unknown, User>(
-  //   {
-  //     mutationFn: (user) => fetch("/api/user", { method: "POST", body: JSON.stringify(user) }).then((res) => res.json()),
-  //     onSuccess: () => {
-  //       queryClient.invalidateQueries("user");
-  //     },
-  //   }
-  // )
 
-  const handleOnCreate = () => {};
+  const { mutate } = useMutation<User, unknown, Omit<User, "id">>({
+    mutationFn: (user) =>
+      fetch("/api/user", { method: "POST", body: JSON.stringify(user) }).then(
+        (res) => res.json()
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+  });
+
+  const handleOnCreate = () => {
+    mutate({ name: "New User", email: "new.user@email.com" });
+  };
 
   return (
     <>
@@ -62,6 +73,7 @@ function Content() {
       <p>id: {data?.id}</p>
       <p>name: {data?.name}</p>
       <p>email: {data?.email}</p>
+      {error && <p>{error.message}</p>}
       <button onClick={handleOnCreate}>Create</button>
     </>
   );
